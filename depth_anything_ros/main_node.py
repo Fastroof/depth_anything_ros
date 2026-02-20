@@ -19,7 +19,9 @@ class DepthAnythingNode(Node):
         self.declare_parameter('output_topic', '/depth/image_raw')
         self.declare_parameter('show_result', False)
         self.declare_parameter('colored_depth', False)
-        
+        self.declare_parameter('use_scale', False)
+        self.declare_parameter('scale', 103.48)
+
         backend_type = self.get_parameter('backend').value
         model_path = self.get_parameter('model_path').value
         device = self.get_parameter('device').value
@@ -28,7 +30,9 @@ class DepthAnythingNode(Node):
         output_topic = self.get_parameter('output_topic').value
         self.show_result = self.get_parameter('show_result').value
         self.colored_depth = self.get_parameter('colored_depth').value
-        
+        self.use_scale = self.get_parameter('use_scale').value
+        self.scale = self.get_parameter('scale').value
+
         if not model_path:
             self.get_logger().error('Model path is empty! Please set model_path parameter.')
             raise ValueError('Model path cannot be empty')
@@ -65,7 +69,11 @@ class DepthAnythingNode(Node):
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             depth_map = self.runner.infer(cv_image)
-            depth_msg = self.bridge.cv2_to_imgmsg(depth_map, encoding='32FC1')
+            if self.use_scale:
+                metric_depth = self.scale / np.clip(depth_map, 1e-4, None)
+                depth_msg = self.bridge.cv2_to_imgmsg(metric_depth.astype(np.float32), encoding='32FC1')
+            else:
+                depth_msg = self.bridge.cv2_to_imgmsg(depth_map, encoding='32FC1')
             depth_msg.header = msg.header
             self.pub.publish(depth_msg)
 
