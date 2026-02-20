@@ -6,12 +6,14 @@ import os
 import onnxruntime as ort
 
 class ONNXRunner(BaseRunner):
-    def __init__(self, model_path: str, logger=None):
+    def __init__(self, model_path: str, device: str = 'cuda', logger=None):
         super().__init__(model_path)
         self.logger = logger
+        self.device = device.lower()
 
         if self.logger:
             self.logger.info(f'Initializing ONNX Runtime with model: {model_path}')
+            self.logger.info(f'Requested device: {self.device}')
 
         if not os.path.exists(model_path):
             error_msg = f'Model file not found: {model_path}'
@@ -20,7 +22,16 @@ class ONNXRunner(BaseRunner):
             raise FileNotFoundError(error_msg)
 
         try:
-            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            # Set providers based on device parameter
+            if self.device == 'cuda':
+                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            elif self.device == 'cpu':
+                providers = ['CPUExecutionProvider']
+            else:
+                if self.logger:
+                    self.logger.warn(f'Unknown device: {self.device}, defaulting to CPU')
+                providers = ['CPUExecutionProvider']
+            
             self.session = ort.InferenceSession(self.model_path, providers=providers)
 
             active_providers = self.session.get_providers()
@@ -29,7 +40,10 @@ class ONNXRunner(BaseRunner):
                 if 'CUDAExecutionProvider' in active_providers:
                     self.logger.info('Using GPU acceleration (CUDA)')
                 else:
-                    self.logger.warn('GPU not available, using CPU (slower performance expected)')
+                    if self.device == 'cuda':
+                        self.logger.warn('CUDA requested but not available, using CPU')
+                    else:
+                        self.logger.info('Using CPU as requested')
             
             self.input_name = self.session.get_inputs()[0].name
             input_shape = self.session.get_inputs()[0].shape

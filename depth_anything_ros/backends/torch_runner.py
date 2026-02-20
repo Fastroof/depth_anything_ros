@@ -6,23 +6,38 @@ import torch
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 
 class TorchRunner(BaseRunner):
-    def __init__(self, model_path: str, logger=None):
+    def __init__(self, model_path: str, device: str = 'cuda', logger=None):
         super().__init__(model_path)
         self.logger = logger
         
         if self.logger:
             self.logger.info(f'Initializing PyTorch backend with model: {model_path}')
+            self.logger.info(f'Requested device: {device}')
         
         try:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            # Set device based on parameter
+            device_lower = device.lower()
+            if device_lower == 'cuda':
+                if torch.cuda.is_available():
+                    self.device = torch.device("cuda")
+                else:
+                    if self.logger:
+                        self.logger.warn('CUDA requested but not available, falling back to CPU')
+                    self.device = torch.device("cpu")
+            elif device_lower == 'cpu':
+                self.device = torch.device("cpu")
+            else:
+                if self.logger:
+                    self.logger.warn(f'Unknown device: {device}, defaulting to CPU')
+                self.device = torch.device("cpu")
             
             if self.logger:
-                if torch.cuda.is_available():
+                if self.device.type == 'cuda':
                     self.logger.info(f'Using GPU: {torch.cuda.get_device_name(0)}')
                     self.logger.info(f'CUDA version: {torch.version.cuda}')
                     self.logger.info(f'GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB')
                 else:
-                    self.logger.warn('CUDA not available, using CPU (slower performance expected)')
+                    self.logger.info('Using CPU as requested')
             
             if self.logger:
                 self.logger.info('Loading image processor...')

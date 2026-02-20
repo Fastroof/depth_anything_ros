@@ -1,8 +1,15 @@
 depth_anything_node:
   ros__parameters:
-    backend: 'onnx' # onnx/torch
-    # model_path: '/home/fastroof/ros2_ws/src/depth_anything_ros/models/depth-anything-v3-small/onnx/model.onnx'
-    model_path: 'depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf'
+    device: 'cuda' # cpu/cuda
+    backend: 'torch' # onnx/torch
+
+    # model_path: '/home/fastroof/ros2_ws/src/depth_anything_ros/models/depth-anything-v2-small/onnx/model.onnx'
+    # model_path: 'depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf'
+    model_path: 'depth-anything/Depth-Anything-V2-Small-hf'
+    
+    # invert: True
+    
     input_topic: '/camera/image_raw'
     output_topic: '/depth/image_raw'
     show_result: True
+    colored_depth: True

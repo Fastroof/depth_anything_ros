@@ -1,4 +1,6 @@
 import cv2
+import matplotlib
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
@@ -11,15 +13,21 @@ class DepthAnythingNode(Node):
 
         self.declare_parameter('backend', 'onnx') # 'onnx' / 'torch'
         self.declare_parameter('model_path', '')
+        self.declare_parameter('device', 'cuda') # 'cpu' / 'cuda'
+        self.declare_parameter('invert', False)
         self.declare_parameter('input_topic', '/camera/image_raw')
         self.declare_parameter('output_topic', '/depth/image_raw')
         self.declare_parameter('show_result', False)
+        self.declare_parameter('colored_depth', False)
         
         backend_type = self.get_parameter('backend').value
         model_path = self.get_parameter('model_path').value
+        device = self.get_parameter('device').value
+        self.invert = self.get_parameter('invert').value
         input_topic = self.get_parameter('input_topic').value
         output_topic = self.get_parameter('output_topic').value
         self.show_result = self.get_parameter('show_result').value
+        self.colored_depth = self.get_parameter('colored_depth').value
         
         if not model_path:
             self.get_logger().error('Model path is empty! Please set model_path parameter.')
@@ -28,10 +36,10 @@ class DepthAnythingNode(Node):
         try:
             if backend_type == 'onnx':
                 from .backends.onnx_runner import ONNXRunner
-                self.runner = ONNXRunner(model_path, self.get_logger())
+                self.runner = ONNXRunner(model_path, device, self.get_logger())
             elif backend_type == 'torch':
                 from .backends.torch_runner import TorchRunner
-                self.runner = TorchRunner(model_path, self.get_logger())
+                self.runner = TorchRunner(model_path, device, self.get_logger())
             else:
                 self.get_logger().error(f'Invalid backend: {backend_type}. Valid options: onnx, torch')
                 raise ValueError(f"Invalid backend: {backend_type}")
@@ -63,8 +71,13 @@ class DepthAnythingNode(Node):
 
             if self.show_result:
                 cv2.imshow('DepthAnything Input', cv_image)
-                depth_display = cv2.normalize(depth_map, None, 0, 255, cv2.NORM_MINMAX)
-                depth_display = depth_display.astype('uint8')
+                if self.invert:
+                    depth_map = np.max(depth_map) - depth_map
+                depth_display = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min()) * 255.0
+                depth_display = depth_display.astype(np.uint8)
+                if self.colored_depth:
+                    cmap = matplotlib.colormaps.get_cmap('Spectral_r')
+                    depth_display = (cmap(depth_display)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
                 cv2.imshow('DepthAnything Depth', depth_display)
                 cv2.waitKey(1)
 
