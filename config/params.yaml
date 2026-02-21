@@ -10,6 +10,8 @@ depth_anything_node:
     input_topic: '/camera/image_raw'
     output_topic: '/depth/image_raw'
     
+    processing_period: 0.5 # Period in seconds between image processing (0.0 = process every frame)
+    
     # show_result: True
     # invert: True
     # colored_depth: True

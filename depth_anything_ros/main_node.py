@@ -6,6 +6,7 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+import time
 
 class DepthAnythingNode(Node):
     def __init__(self):
@@ -15,20 +16,29 @@ class DepthAnythingNode(Node):
         self.declare_parameter('model_path', '')
         self.declare_parameter('device', 'cuda') # 'cpu' / 'cuda'
         self.declare_parameter('invert', False)
+        self.declare_parameter('processing_period', 0.0) # seconds
         self.declare_parameter('input_topic', '/camera/image_raw')
         self.declare_parameter('output_topic', '/depth/image_raw')
         self.declare_parameter('show_result', False)
         self.declare_parameter('colored_depth', False)
         self.declare_parameter('use_scale', False)
-        self.declare_parameter('scale', 103.48)
+        self.declare_parameter('scale', 4.25)
 
         backend_type = self.get_parameter('backend').value
         model_path = self.get_parameter('model_path').value
         device = self.get_parameter('device').value
         self.invert = self.get_parameter('invert').value
+        self.processing_period = self.get_parameter('processing_period').value
         input_topic = self.get_parameter('input_topic').value
         output_topic = self.get_parameter('output_topic').value
         self.show_result = self.get_parameter('show_result').value
+        
+        # Initialize timing variables
+        self.last_processing_time = 0.0
+        if self.processing_period > 0.0:
+            self.get_logger().info(f'Processing period set to {self.processing_period:.2f} seconds')
+        else:
+            self.get_logger().info('Processing every frame (no throttling)')
         self.colored_depth = self.get_parameter('colored_depth').value
         self.use_scale = self.get_parameter('use_scale').value
         self.scale = self.get_parameter('scale').value
@@ -67,6 +77,15 @@ class DepthAnythingNode(Node):
 
     def image_callback(self, msg):
         try:
+            # Check if enough time has passed since last processing
+            current_time = time.time()
+            if self.processing_period > 0.0:
+                time_elapsed = current_time - self.last_processing_time
+                if time_elapsed < self.processing_period:
+                    return  # Skip this frame
+            
+            self.last_processing_time = current_time
+            
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             depth_map = self.runner.infer(cv_image)
             if self.use_scale:
