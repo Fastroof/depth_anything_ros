@@ -23,6 +23,9 @@ class DepthAnythingNode(Node):
         self.declare_parameter('colored_depth', False)
         self.declare_parameter('use_scale', False)
         self.declare_parameter('scale', 4.25)
+        self.declare_parameter('use_fp16', True)
+        self.declare_parameter('use_compile', True)
+        self.declare_parameter('input_size', 0)  # 0 = use original size, otherwise resize to NxN
 
         backend_type = self.get_parameter('backend').value
         model_path = self.get_parameter('model_path').value
@@ -42,6 +45,9 @@ class DepthAnythingNode(Node):
         self.colored_depth = self.get_parameter('colored_depth').value
         self.use_scale = self.get_parameter('use_scale').value
         self.scale = self.get_parameter('scale').value
+        use_fp16 = self.get_parameter('use_fp16').value
+        use_compile = self.get_parameter('use_compile').value
+        input_size = self.get_parameter('input_size').value
 
         if not model_path:
             self.get_logger().error('Model path is empty! Please set model_path parameter.')
@@ -50,10 +56,13 @@ class DepthAnythingNode(Node):
         try:
             if backend_type == 'onnx':
                 from .backends.onnx_runner import ONNXRunner
-                self.runner = ONNXRunner(model_path, device, self.get_logger())
+                self.runner = ONNXRunner(model_path, device, self.get_logger(), input_size=input_size)
             elif backend_type == 'torch':
                 from .backends.torch_runner import TorchRunner
-                self.runner = TorchRunner(model_path, device, self.get_logger())
+                self.runner = TorchRunner(
+                    model_path, device, self.get_logger(),
+                    use_fp16=use_fp16, use_compile=use_compile, input_size=input_size
+                )
             else:
                 self.get_logger().error(f'Invalid backend: {backend_type}. Valid options: onnx, torch')
                 raise ValueError(f"Invalid backend: {backend_type}")
@@ -67,7 +76,7 @@ class DepthAnythingNode(Node):
             Image,
             input_topic,
             self.image_callback,
-            qos_profile_sensor_data
+            1
         )
         self.get_logger().info(f'Subscribed to image topic: {input_topic}')
         

@@ -1,6 +1,6 @@
 depth_anything_node:
   ros__parameters:
-    device: 'cpu' # cpu/cuda
+    device: 'cuda' # cpu/cuda
     backend: 'onnx' # onnx/torch
 
     model_path: '/home/fastroof/ros2_ws/src/depth_anything_ros/models/depth-anything-v2-small/onnx/model.onnx'
@@ -10,10 +10,18 @@ depth_anything_node:
     input_topic: '/camera/image_raw'
     output_topic: '/depth/image_raw'
     
-    processing_period: 0.5 # Period in seconds between image processing (0.0 = process every frame)
+    processing_period: 0.0 # Period in seconds between image processing (0.0 = process every frame)
     
     # show_result: True
     # invert: True
     # colored_depth: True
 
     use_scale: True
+    scale: 4.25
+    
+    # PyTorch optimization options
+    use_fp16: True      # Use FP16 (half precision) for faster inference on GPU
+    use_compile: True   # Use torch.compile with max-autotune for optimized kernels
+    
+    # Input resolution (applies to all backends)
+    input_size: 384       # 0 = use original resolution, otherwise resize to NxN (e.g., 256, 384, 518)

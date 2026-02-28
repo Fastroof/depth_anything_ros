@@ -6,8 +6,8 @@ import os
 import onnxruntime as ort
 
 class ONNXRunner(BaseRunner):
-    def __init__(self, model_path: str, device: str = 'cuda', logger=None):
-        super().__init__(model_path)
+    def __init__(self, model_path: str, device: str = 'cuda', logger=None, input_size: int = 0):
+        super().__init__(model_path, input_size)
         self.logger = logger
         self.device = device.lower()
 
@@ -50,12 +50,13 @@ class ONNXRunner(BaseRunner):
             if self.logger:
                 self.logger.info(f'Model input: {self.input_name}, shape: {input_shape}')
             
-            self.input_size = (518, 518) 
+            # Use custom input_size if provided, otherwise default to 518
+            self.onnx_input_size = (input_size, input_size) if input_size > 0 else (518, 518)
             self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
             self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
             
             if self.logger:
-                self.logger.info(f'ONNX model loaded successfully. Input size: {self.input_size}')
+                self.logger.info(f'ONNX model loaded successfully. Input size: {self.onnx_input_size}')
                 
         except Exception as e:
             error_msg = f'Failed to load ONNX model: {str(e)}'
@@ -68,7 +69,7 @@ class ONNXRunner(BaseRunner):
             orig_h, orig_w = cv_image.shape[:2]
 
             img = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-            img = cv2.resize(img, self.input_size)
+            img = cv2.resize(img, self.onnx_input_size)
             img = img.astype(np.float32) / 255.0
             img = (img - self.mean) / self.std
             img = img.transpose(2, 0, 1)
