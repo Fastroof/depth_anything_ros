@@ -18,7 +18,7 @@ class DepthAnythingNode(Node):
         self.declare_parameter('invert', False)
         self.declare_parameter('processing_period', 0.0) # seconds
         self.declare_parameter('input_topic', '/camera/image_raw')
-        self.declare_parameter('output_topic', '/depth/image_raw')
+        self.declare_parameter('output_topic', '/depth')
         self.declare_parameter('show_result', False)
         self.declare_parameter('colored_depth', False)
         self.declare_parameter('use_scale', False)
