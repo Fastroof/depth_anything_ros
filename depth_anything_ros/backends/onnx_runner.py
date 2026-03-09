@@ -6,8 +6,9 @@ import os
 import onnxruntime as ort
 
 class ONNXRunner(BaseRunner):
-    def __init__(self, model_path: str, device: str = 'cuda', logger=None, input_size: int = 0):
-        super().__init__(model_path, input_size)
+    def __init__(self, model_path: str, device: str = 'cuda', logger=None, 
+                 input_size_w: int = 0, input_size_h: int = 0):
+        super().__init__(model_path, input_size_w, input_size_h)
         self.logger = logger
         self.device = device.lower()
 
@@ -60,8 +61,11 @@ class ONNXRunner(BaseRunner):
             if self.logger:
                 self.logger.info(f'Model input: {self.input_name}, shape: {input_shape}')
             
-            # Use custom input_size if provided, otherwise default to 518
-            self.onnx_input_size = (input_size, input_size) if input_size > 0 else (518, 518)
+            # Use custom input_size if provided, otherwise default to 518x518
+            if input_size_w > 0 and input_size_h > 0:
+                self.onnx_input_size = (input_size_w, input_size_h)
+            else:
+                self.onnx_input_size = (518, 518)
             self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
             self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
             

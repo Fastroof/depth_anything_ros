@@ -7,8 +7,9 @@ from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 
 class TorchRunner(BaseRunner):
     def __init__(self, model_path: str, device: str = 'cuda', logger=None, 
-                 use_fp16: bool = True, use_compile: bool = True, input_size: int = 0):
-        super().__init__(model_path, input_size)
+                 use_fp16: bool = True, use_compile: bool = True,
+                 input_size_w: int = 0, input_size_h: int = 0):
+        super().__init__(model_path, input_size_w, input_size_h)
         self.logger = logger
         self.use_fp16 = use_fp16 and device.lower() == 'cuda'
         self.use_compile = use_compile
@@ -18,7 +19,10 @@ class TorchRunner(BaseRunner):
             self.logger.info(f'Requested device: {device}')
             self.logger.info(f'FP16 enabled: {self.use_fp16}')
             self.logger.info(f'torch.compile enabled: {self.use_compile}')
-            self.logger.info(f'Input size: {input_size if input_size > 0 else "original"}')
+            if input_size_w > 0 and input_size_h > 0:
+                self.logger.info(f'Input size: {input_size_w}x{input_size_h}')
+            else:
+                self.logger.info(f'Input size: original')
         
         try:
             # Set device based on parameter

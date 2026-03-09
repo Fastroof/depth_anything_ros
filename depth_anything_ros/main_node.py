@@ -25,7 +25,8 @@ class DepthAnythingNode(Node):
         self.declare_parameter('scale', 4.25)
         self.declare_parameter('use_fp16', True)
         self.declare_parameter('use_compile', True)
-        self.declare_parameter('input_size', 0)  # 0 = use original size, otherwise resize to NxN
+        self.declare_parameter('input_size_w', 0)  # 0 = use original width
+        self.declare_parameter('input_size_h', 0)  # 0 = use original height
 
         backend_type = self.get_parameter('backend').value
         model_path = self.get_parameter('model_path').value
@@ -47,7 +48,8 @@ class DepthAnythingNode(Node):
         self.scale = self.get_parameter('scale').value
         use_fp16 = self.get_parameter('use_fp16').value
         use_compile = self.get_parameter('use_compile').value
-        input_size = self.get_parameter('input_size').value
+        input_size_w = self.get_parameter('input_size_w').value
+        input_size_h = self.get_parameter('input_size_h').value
 
         if not model_path:
             self.get_logger().error('Model path is empty! Please set model_path parameter.')
@@ -56,12 +58,16 @@ class DepthAnythingNode(Node):
         try:
             if backend_type == 'onnx':
                 from .backends.onnx_runner import ONNXRunner
-                self.runner = ONNXRunner(model_path, device, self.get_logger(), input_size=input_size)
+                self.runner = ONNXRunner(
+                    model_path, device, self.get_logger(),
+                    input_size_w=input_size_w, input_size_h=input_size_h
+                )
             elif backend_type == 'torch':
                 from .backends.torch_runner import TorchRunner
                 self.runner = TorchRunner(
                     model_path, device, self.get_logger(),
-                    use_fp16=use_fp16, use_compile=use_compile, input_size=input_size
+                    use_fp16=use_fp16, use_compile=use_compile,
+                    input_size_w=input_size_w, input_size_h=input_size_h
                 )
             else:
                 self.get_logger().error(f'Invalid backend: {backend_type}. Valid options: onnx, torch')

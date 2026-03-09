@@ -7,7 +7,7 @@ depth_anything_node:
     # model_path: 'depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf'
     # model_path: 'depth-anything/Depth-Anything-V2-Small-hf'
     
-    input_topic: '/camera/image_raw'
+    input_topic: '/camera/image_resized'
     output_topic: '/depth'
     
     processing_period: 0.0 # Period in seconds between image processing (0.0 = process every frame)
@@ -24,4 +24,5 @@ depth_anything_node:
     use_compile: True   # Use torch.compile with max-autotune for optimized kernels
     
     # Input resolution (applies to all backends)
-    input_size: 384       # 0 = use original resolution, otherwise resize to NxN (e.g., 256, 384, 518)
+    input_size_w: 640   # 0 = use original width
+    input_size_h: 384   # 0 = use original height
