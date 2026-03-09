@@ -24,7 +24,17 @@ class ONNXRunner(BaseRunner):
         try:
             # Set providers based on device parameter
             if self.device == 'cuda':
-                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+                providers = [
+                    ('TensorrtExecutionProvider', {
+                        'device_id': 0,
+                        'trt_max_workspace_size': 2147483648,
+                        'trt_fp16_enable': False,
+                        'trt_engine_cache_enable': True,
+                        'trt_engine_cache_path': '/tmp/trt_cache',
+                    }),
+                    ('CUDAExecutionProvider', {'device_id': 0}),
+                    ('CPUExecutionProvider')
+                ]
             elif self.device == 'cpu':
                 providers = ['CPUExecutionProvider']
             else:
