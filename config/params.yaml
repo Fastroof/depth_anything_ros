@@ -26,3 +26,6 @@ depth_anything_node:
     # Input resolution (applies to all backends)
     input_size_w: 640   # 0 = use original width
     input_size_h: 384   # 0 = use original height
+    
+    # Depth filtering
+    max_depth: 6.0      # 0 = no filtering, >0 = filter out points farther than this (meters)

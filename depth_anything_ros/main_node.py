@@ -27,6 +27,7 @@ class DepthAnythingNode(Node):
         self.declare_parameter('use_compile', True)
         self.declare_parameter('input_size_w', 0)  # 0 = use original width
         self.declare_parameter('input_size_h', 0)  # 0 = use original height
+        self.declare_parameter('max_depth', 0.0)  # 0 = no filtering, >0 = filter out points farther than this (meters)
 
         backend_type = self.get_parameter('backend').value
         model_path = self.get_parameter('model_path').value
@@ -50,6 +51,7 @@ class DepthAnythingNode(Node):
         use_compile = self.get_parameter('use_compile').value
         input_size_w = self.get_parameter('input_size_w').value
         input_size_h = self.get_parameter('input_size_h').value
+        self.max_depth = self.get_parameter('max_depth').value
 
         if not model_path:
             self.get_logger().error('Model path is empty! Please set model_path parameter.')
@@ -105,9 +107,14 @@ class DepthAnythingNode(Node):
             depth_map = self.runner.infer(cv_image)
             if self.use_scale:
                 metric_depth = self.scale / np.clip(depth_map, 1e-4, None)
-                depth_msg = self.bridge.cv2_to_imgmsg(metric_depth.astype(np.float32), encoding='32FC1')
             else:
-                depth_msg = self.bridge.cv2_to_imgmsg(depth_map, encoding='32FC1')
+                metric_depth = depth_map
+            
+            # Filter out points farther than max_depth
+            if self.max_depth > 0.0:
+                metric_depth = np.where(metric_depth > self.max_depth, 0.0, metric_depth)
+            
+            depth_msg = self.bridge.cv2_to_imgmsg(metric_depth.astype(np.float32), encoding='32FC1')
             depth_msg.header = msg.header
             self.pub.publish(depth_msg)
 
