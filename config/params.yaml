@@ -29,3 +29,6 @@ depth_anything_node:
     
     # Depth filtering
     max_depth: 6.0      # 0 = no filtering, >0 = filter out points farther than this (meters)
+
+    # Performance metrics
+    performance_metrics_enabled: False
